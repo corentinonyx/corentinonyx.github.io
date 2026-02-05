@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compteur TP FTV</title>
+    <link rel="icon" type="image/png" href="images/icon.ico">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <div id="app">
+
+        <header id="top_bar">
+            <button id="exclusiveToggle" class="toggleButton" aria-pressed="false">
+                <span id="exclusiveToggleState" class="toggleState">OFF</span>
+                <span class="toggleVisual" aria-hidden="true">
+                    <span class="toggleKnob"></span>
+                </span>
+                <span class="toggleLabel">Stop timer si un autre est lancé</span>
+            </button>
+        </header>
+        
+        <main>
+            <div class="countersWrapper_general">
+
+                <div class="styte_rank">
+                    <div>
+                        <p class="style_title">Choix du nombre de personne :</p>
+                        <select id="timerSelect">
+                            <option value="none">Nombre de personne ?</option>
+                            <option value="1">1 personne</option>
+                            <option value="2">2 personnes</option>
+                            <option value="3">3 personnes</option>
+                            <option value="4">4 personnes</option>
+                            <option value="5">5 personnes</option>
+                            <option value="6">6 personnes</option>
+                        </select>
+                    </div>
+                    <HR color="black" size="2px">
+                    <div>
+                        <p class="style_title">Classement :</p>
+                        <table id="rankingTable">
+                            <thead>
+                                <tr>
+                                    <th>Compteur</th>
+                                    <th>Temps</th>
+                                </tr>
+                            </thead>
+                            <tbody id="rankingBody">
+                                <!-- Les lignes seront ajoutées par JavaScript -->
+                            </tbody>
+                        </table>
+                        <HR color="black" size="2px">
+                        <div>
+                            <button id="reset_all_timer">Reset Timer</button>
+                        </div>
+                    </div>
+                </div>
+        
+                <div class="style_timer">
+                    <div>
+                        <div class="countersWrapper_timer_display">
+                            
+                            <div id="counter1Container" class="counterContainer">
+                                <div class="input_timer_content">
+                                    <input type="text" id="nameInput1" placeholder="Entrez un nom">
+                                </div>
+                                <div class="label_timer_content">
+                                    <p id="counter1" class="counterstyle">00:00:00.00</p>
+                                </div>
+                                <div class="button_timer_content">
+                                    <button class="button_play_style" id="playBtn1">Play</button>
+                                    <button class="button_timer_style button_hidden" id="stopBtn1">Stop</button>
+                                    <button id="resetBtn1" class="button_hidden">Reset</button>
+                                </div>
+                            </div>
+
+                            <div id="counter2Container" class="counterContainer">
+                                <div class="input_timer_content">
+                                    <input type="text" id="nameInput2" placeholder="Entrez un nom">
+                                </div>
+                                <div class="label_timer_content">
+                                    <h1 id="counter2" class="counterstyle">00:00:00.00</h1>
+                                </div>
+                                <div class="button_timer_content">
+                                    <button class="button_play_style" id="playBtn2">Play</button>
+                                    <button class="button_timer_style button_hidden" id="stopBtn2">Stop</button>
+                                    <button id="resetBtn2" class="button_hidden">Reset</button>
+                                </div>
+                            </div>
+
+                            <div id="counter3Container" class="counterContainer">
+                                <div class="input_timer_content">
+                                    <input type="text" id="nameInput3" placeholder="Entrez un nom">
+                                </div>
+                                <div class="label_timer_content">
+                                    <h1 id="counter3" class="counterstyle">00:00:00.00</h1>
+                                </div>
+                                <div class="button_timer_content">
+                                    <button class="button_play_style" id="playBtn3">Play</button>
+                                    <button class="button_timer_style button_hidden" id="stopBtn3">Stop</button>
+                                    <button id="resetBtn3" class="button_hidden">Reset</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="countersWrapper_timer_display">  
+                            <div id="counter4Container" class="counterContainer">
+                                <div class="input_timer_content">
+                                    <input type="text" id="nameInput4" placeholder="Entrez un nom">
+                                </div>
+                                <div class="label_timer_content">
+                                    <h1 id="counter4" class="counterstyle">00:00:00.00</h1>
+                                </div>
+                                <div class="button_timer_content">
+                                    <button class="button_play_style" id="playBtn4">Play</button>
+                                    <button class="button_timer_style button_hidden" id="stopBtn4">Stop</button>
+                                    <button id="resetBtn4" class="button_hidden">Reset</button>
+                                </div>
+                            </div>
+                            <div id="counter5Container" class="counterContainer">
+                                <div class="input_timer_content">
+                                    <input type="text" id="nameInput5" placeholder="Entrez un nom">
+                                </div>
+                                <div class="label_timer_content">
+                                    <h1 id="counter5" class="counterstyle">00:00:00.00</h1>
+                                </div>
+                                <div class="button_timer_content">
+                                    <button class="button_play_style" id="playBtn5">Play</button>
+                                    <button class="button_timer_style button_hidden" id="stopBtn5">Stop</button>
+                                    <button id="resetBtn5" class="button_hidden">Reset</button>
+                                </div>
+                            </div>
+                            <div id="counter6Container" class="counterContainer">
+                                <div class="input_timer_content">
+                                    <input type="text" id="nameInput6" placeholder="Entrez un nom">
+                                </div>
+                                <div class="label_timer_content">
+                                    <h1 id="counter6" class="counterstyle">00:00:00.00</h1>
+                                </div>
+                                <div class="button_timer_content">
+                                    <button class="button_play_style" id="playBtn6">Play</button>
+                                    <button class="button_timer_style button_hidden" id="stopBtn6">Stop</button>
+                                    <button id="resetBtn6" class="button_hidden">Reset</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <footer>
+            <div id="footer_bar_credit">
+                <img id="logo" src="images/copyright.jpg" />
+                <img id="logo" src="images/logo.png" />
+                <p id="logo_label">&copy; 2024 C. Millequand</p>
+            </div>
+            <div id="footer_bar_tools">
+                <select id="resolutionSelect">
+                    <option value="none">Default</option>
+                    <option value="50">50 %</option>
+                    <option value="75">75 %</option>
+                    <option value="100">100 %</option>
+                    <option value="125">125 %</option>
+                </select>
+                <p id="label_resolution">Résolution : </p>
+            </div>
+        </footer>
+        
+    </div>
+    <script src="script.js"></script>
+    <script src="resolution.js"></script>
+</body>
+</html>
