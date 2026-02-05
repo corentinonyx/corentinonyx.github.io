@@ -127,20 +127,33 @@ class Timer {
             return;
         }
 
-        this.elapsedTime = Math.max(0, state.elapsedTime || 0);
-        this.counterElement.textContent = this.getFormattedTime();
+        const baseElapsed = Math.max(0, state.elapsedTime || 0);
+        const lastStartTime = typeof state.lastStartTime === 'number' ? state.lastStartTime : null;
+        const wasRunning = Boolean(state.isRunning);
+        const runningDelta = wasRunning && lastStartTime ? Math.max(0, Date.now() - lastStartTime) : 0;
+
+        this.elapsedTime = baseElapsed;
+
         if (typeof state.nameInputValue === 'string') {
             this.nameInput.value = state.nameInputValue;
             this.updateName();
         }
 
-        if (state.isRunning) {
-            this.start({ persist: false });
+        if (wasRunning) {
+            if (this.intervalId) {
+                clearInterval(this.intervalId);
+            }
+            this.startTime = Date.now() - runningDelta;
+            this.intervalId = setInterval(() => this.updateCounter(), 10);
+            this.setPlayButtonState("Stop", "2px solid red", "red");
+            this.counterElement.textContent = this.getFormattedTime();
         } else {
             if (this.intervalId) {
                 clearInterval(this.intervalId);
                 this.intervalId = null;
             }
+            this.startTime = 0;
+            this.counterElement.textContent = this.getFormattedTime();
             this.setPlayButtonState("Play", "2px solid black", "black");
         }
     }
@@ -301,21 +314,22 @@ rankingBody.appendChild(row);
 }
 
 function persistState() {
-try {
-const state = {
-exclusiveMode,
-visibleCount: visibleTimerCount,
-timers: timers.map(timer => ({
-elapsedTime: timer.getElapsedTime(),
-isRunning: timer.isRunning(),
-nameInputValue: timer.nameInput.value,
-})),
-};
+    try {
+        const state = {
+            exclusiveMode,
+            visibleCount: visibleTimerCount,
+            timers: timers.map(timer => ({
+                elapsedTime: timer.getElapsedTime(),
+                isRunning: timer.isRunning(),
+                nameInputValue: timer.nameInput.value,
+                lastStartTime: timer.isRunning() ? timer.startTime : null,
+            })),
+        };
 
-localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-} catch (error) {
-console.error('Impossible de sauvegarder les compteurs', error);
-}
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (error) {
+        console.error('Impossible de sauvegarder les compteurs', error);
+    }
 }
 
 function restoreState() {
