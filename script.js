@@ -180,6 +180,18 @@ const timerSelect = document.getElementById('timerSelect');
 const resetAllBtn = document.getElementById('reset_all_timer');
 const exclusiveToggleState = document.getElementById('exclusiveToggleState');
 
+// Éléments statistiques
+const averageTimeElement = document.getElementById('averageTime');
+const toleranceSelect = document.getElementById('toleranceSelect');
+const equityIndicator = document.getElementById('equityIndicator');
+const globalAlert = document.getElementById('globalAlert');
+const deviationBody = document.getElementById('deviationBody');
+
+// Références aux indicateurs de temps de parole
+const speakingIndicators = Array.from({ length: TOTAL_TIMERS }, (_, index) =>
+    document.getElementById(`speakingIndicator${index + 1}`)
+);
+
 let exclusiveMode = false;
 let visibleTimerCount = TOTAL_TIMERS;
 let isRestoringState = false;
@@ -233,6 +245,17 @@ if (timerSelect) {
         const selectedValue = Number.isFinite(parsedValue) ? parsedValue : TOTAL_TIMERS;
         updateVisibleTimers(selectedValue);
         updateRanking();
+    });
+}
+
+// Écouteur pour le changement de seuil de tolérance
+if (toleranceSelect) {
+    toleranceSelect.addEventListener('change', () => {
+        updateStatistics();
+        updateSpeakingIndicators();
+        if (!isRestoringState) {
+            persistState();
+        }
     });
 }
 
@@ -298,19 +321,218 @@ function updateRanking() {
         .sort((a, b) => b.time - a.time);
 
     rankingBody.innerHTML = '';
-    times.forEach(entry => {
+
+    // Calculer la moyenne pour déterminer les écarts
+    const totalTime = times.reduce((sum, entry) => sum + entry.time, 0);
+    const averageTime = times.length > 0 ? totalTime / times.length : 0;
+    
+    // Trouver le temps maximum pour normaliser les barres
+    const maxTime = times.length > 0 ? times[0].time : 0;
+
+    times.forEach((entry, index) => {
         const row = document.createElement('tr');
         const idCell = document.createElement('td');
         const timeCell = document.createElement('td');
+        const visualCell = document.createElement('td');
 
         idCell.textContent = entry.name;
         timeCell.textContent = entry.formattedTime;
 
+        // Créer l'indicateur visuel
+        const visualContainer = document.createElement('div');
+        visualContainer.className = 'visual_indicator';
+
+        // Barre de progression
+        const progressBar = document.createElement('div');
+        progressBar.className = 'progress_bar_simple';
+
+        const progressFill = document.createElement('div');
+        progressFill.className = 'progress_fill_simple';
+        const progressPercentage = maxTime > 0 ? (entry.time / maxTime) * 100 : 0;
+        progressFill.style.width = `${progressPercentage}%`;
+
+        // Déterminer la couleur selon l'écart par rapport à la moyenne
+        const deviation = averageTime > 0 ? ((entry.time - averageTime) / averageTime) * 100 : 0;
+        let colorClass = 'progress_normal';
+        let icon = '';
+
+        if (deviation > 10) {
+            colorClass = 'progress_high';
+            icon = '🔥'; // Beaucoup plus que la moyenne
+        } else if (deviation > 5) {
+            colorClass = 'progress_above';
+            icon = '📈'; // Plus que la moyenne
+        } else if (deviation < -10) {
+            colorClass = 'progress_low';
+            icon = '❄️'; // Beaucoup moins que la moyenne
+        } else if (deviation < -5) {
+            colorClass = 'progress_below';
+            icon = '📉'; // Moins que la moyenne
+        } else {
+            icon = '⚖️'; // Équilibré
+        }
+
+        progressFill.classList.add(colorClass);
+
+        // Ajouter l'icône d'écart
+        const deviationIcon = document.createElement('span');
+        deviationIcon.className = 'deviation_icon';
+        deviationIcon.textContent = icon;
+        deviationIcon.title = `${deviation > 0 ? '+' : ''}${deviation.toFixed(1)}%`;
+
+        // Assembler l'indicateur visuel
+        progressBar.appendChild(progressFill);
+        visualContainer.appendChild(progressBar);
+        visualContainer.appendChild(deviationIcon);
+        visualCell.appendChild(visualContainer);
+
         row.appendChild(idCell);
         row.appendChild(timeCell);
+        row.appendChild(visualCell);
 
-rankingBody.appendChild(row);
-});
+        rankingBody.appendChild(row);
+    });
+
+    // Mettre à jour les statistiques et les indicateurs
+    updateStatistics();
+    updateSpeakingIndicators();
+}
+
+function updateStatistics() {
+    const activeTimers = timers
+        .map((timer, index) => ({ timer, container: counterContainers[index] }))
+        .filter(({ container }) => container && container.style.display !== 'none')
+        .map(({ timer }) => ({
+            name: timer.name,
+            time: timer.getElapsedTime(),
+            formattedTime: timer.getFormattedTime(),
+        }));
+
+    if (activeTimers.length === 0) {
+        averageTimeElement.textContent = '00:00:00.00';
+        deviationBody.innerHTML = '';
+        equityIndicator.textContent = 'Non déterminé';
+        equityIndicator.className = 'equity_indicator';
+        globalAlert.classList.add('hidden');
+        return;
+    }
+
+    // Calcul de la moyenne
+    const totalTime = activeTimers.reduce((sum, timer) => sum + timer.time, 0);
+    const averageTime = totalTime / activeTimers.length;
+    averageTimeElement.textContent = formatTime(averageTime);
+
+    // Calcul des écarts et mise à jour du tableau
+    const tolerance = parseFloat(toleranceSelect?.value || 5);
+    let hasImbalance = false;
+    let maxDeviation = 0;
+
+    deviationBody.innerHTML = '';
+    activeTimers.forEach(timer => {
+        const deviation = averageTime > 0 ? ((timer.time - averageTime) / averageTime) * 100 : 0;
+        const absoluteDeviation = Math.abs(deviation);
+        
+        if (absoluteDeviation > tolerance) {
+            hasImbalance = true;
+        }
+        maxDeviation = Math.max(maxDeviation, absoluteDeviation);
+
+        const row = document.createElement('tr');
+        const nameCell = document.createElement('td');
+        const timeCell = document.createElement('td');
+        const deviationCell = document.createElement('td');
+
+        nameCell.textContent = timer.name;
+        timeCell.textContent = timer.formattedTime;
+        
+        deviationCell.textContent = `${deviation >= 0 ? '+' : ''}${deviation.toFixed(1)}%`;
+        deviationCell.className = absoluteDeviation > tolerance ? 'deviation_warning' : 'deviation_normal';
+
+        row.appendChild(nameCell);
+        row.appendChild(timeCell);
+        row.appendChild(deviationCell);
+        deviationBody.appendChild(row);
+    });
+
+    // Mise à jour de l'indicateur global d'équité
+    if (hasImbalance) {
+        equityIndicator.textContent = 'Non respectée';
+        equityIndicator.className = 'equity_indicator not_respected';
+        globalAlert.classList.remove('hidden');
+    } else {
+        equityIndicator.textContent = 'Respectée';
+        equityIndicator.className = 'equity_indicator respected';
+        globalAlert.classList.add('hidden');
+    }
+}
+
+function updateSpeakingIndicators() {
+    // Vérifier si les indicateurs existent
+    if (!speakingIndicators || speakingIndicators.length === 0) {
+        console.error('Les indicateurs de temps de parole ne sont pas trouvés');
+        return;
+    }
+
+    const activeTimers = timers
+        .map((timer, index) => ({ timer, container: counterContainers[index], indicator: speakingIndicators[index] }))
+        .filter(({ container }) => container && container.style.display !== 'none');
+
+    // Réinitialiser tous les indicateurs à "Moyenne"
+    speakingIndicators.forEach((indicator, index) => {
+        if (indicator) {
+            const container = counterContainers[index];
+            if (!container || container.style.display === 'none') {
+                indicator.textContent = 'Moyenne';
+                indicator.className = 'speaking_indicator';
+            }
+        }
+    });
+
+    if (activeTimers.length === 0) {
+        return;
+    }
+
+    // Calculer la moyenne
+    const totalTime = activeTimers.reduce((sum, { timer }) => sum + timer.getElapsedTime(), 0);
+    const averageTime = totalTime / activeTimers.length;
+    const tolerance = parseFloat(toleranceSelect?.value || 5);
+
+    // Mettre à jour chaque indicateur
+    activeTimers.forEach(({ timer, indicator }) => {
+        if (!indicator) {
+            console.warn('Indicateur non trouvé pour un timer actif');
+            return;
+        }
+
+        const timerTime = timer.getElapsedTime();
+        const deviation = averageTime > 0 ? ((timerTime - averageTime) / averageTime) * 100 : 0;
+
+        // Déterminer le statut et le texte
+        let status = 'average';
+        let text = 'Moyenne';
+
+        if (deviation > tolerance) {
+            status = 'too_much';
+            text = 'Trop parlé';
+        } else if (deviation < -tolerance) {
+            status = 'too_little';
+            text = 'Peu parlé';
+        }
+
+        // Mettre à jour l'indicateur
+        indicator.textContent = text;
+        indicator.className = `speaking_indicator ${status}`;
+        
+        console.log(`Timer ${timer.name}: ${text} (déviation: ${deviation.toFixed(1)}%)`);
+    });
+}
+
+function formatTime(time) {
+    const hours = Math.floor(time / (1000 * 60 * 60)).toString().padStart(2, '0');
+    const minutes = Math.floor((time % (1000 * 60 * 60)) / (1000 * 60)).toString().padStart(2, '0');
+    const seconds = Math.floor((time % (1000 * 60)) / 1000).toString().padStart(2, '0');
+    const centiseconds = Math.floor((time % 1000) / 10).toString().padStart(2, '0');
+    return `${hours}:${minutes}:${seconds}.${centiseconds}`;
 }
 
 function persistState() {
@@ -318,6 +540,7 @@ function persistState() {
         const state = {
             exclusiveMode,
             visibleCount: visibleTimerCount,
+            toleranceThreshold: toleranceSelect?.value || '5',
             timers: timers.map(timer => ({
                 elapsedTime: timer.getElapsedTime(),
                 isRunning: timer.isRunning(),
@@ -350,6 +573,11 @@ updateExclusiveToggleVisuals({ persist: false });
 
 visibleTimerCount = clamp(storedState.visibleCount ?? TOTAL_TIMERS, 0, TOTAL_TIMERS);
 
+// Restaurer le seuil de tolérance
+if (storedState.toleranceThreshold && toleranceSelect) {
+    toleranceSelect.value = storedState.toleranceThreshold;
+}
+
 timers.forEach((timer, index) => {
 const timerState = storedState.timers ? storedState.timers[index] : null;
 timer.applyState(timerState);
@@ -369,5 +597,10 @@ updateRanking();
 
 // Initialise le classement au chargement de la page.
 updateRanking();
+
+// Initialiser les indicateurs de temps de parole
+setTimeout(() => {
+    updateSpeakingIndicators();
+}, 100);
 
 // ------------------------------------------------------------------------------------------------------------------------------------------------

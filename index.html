@@ -12,12 +12,24 @@
     <div id="app">
 
         <header id="top_bar">
+            <div>
+                <p class="style_title">Nombre de personne en plateau:</p>
+                <select id="timerSelect">
+                    <option value="none">Nombre de personne ?</option>
+                    <option value="1">1 personne</option>
+                    <option value="2">2 personnes</option>
+                    <option value="3">3 personnes</option>
+                    <option value="4">4 personnes</option>
+                    <option value="5">5 personnes</option>
+                    <option value="6">6 personnes</option>
+                </select>
+            </div>
             <button id="exclusiveToggle" class="toggleButton" aria-pressed="false">
                 <span id="exclusiveToggleState" class="toggleState">OFF</span>
                 <span class="toggleVisual" aria-hidden="true">
                     <span class="toggleKnob"></span>
                 </span>
-                <span class="toggleLabel">Stop timer si un autre est lancé</span>
+                <span class="toggleLabel">Un seul timer à la fois</span>
             </button>
         </header>
         
@@ -26,35 +38,80 @@
 
                 <div class="styte_rank">
                     <div>
-                        <p class="style_title">Choix du nombre de personne :</p>
-                        <select id="timerSelect">
-                            <option value="none">Nombre de personne ?</option>
-                            <option value="1">1 personne</option>
-                            <option value="2">2 personnes</option>
-                            <option value="3">3 personnes</option>
-                            <option value="4">4 personnes</option>
-                            <option value="5">5 personnes</option>
-                            <option value="6">6 personnes</option>
-                        </select>
-                    </div>
-                    <HR color="black" size="2px">
-                    <div>
                         <p class="style_title">Classement :</p>
-                        <table id="rankingTable">
+                        <table id="deviationTable">
                             <thead>
                                 <tr>
                                     <th>Compteur</th>
                                     <th>Temps</th>
+                                    <th>Visuel</th>
                                 </tr>
                             </thead>
                             <tbody id="rankingBody">
                                 <!-- Les lignes seront ajoutées par JavaScript -->
                             </tbody>
                         </table>
-                        <HR color="black" size="2px">
-                        <div>
-                            <button id="reset_all_timer">Reset Timer</button>
+
+                        <!-- Tableau des écarts -->
+                        <div class="deviation_section">
+                            <p class="style_title">Écarts par intervenant :</p>
+                            <table id="deviationTable">
+                                <thead>
+                                    <tr>
+                                        <th>Intervenant</th>
+                                        <th>Temps</th>
+                                        <th>Écart %</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="deviationBody">
+                                    <!-- Les lignes seront ajoutées par JavaScript -->
+                                </tbody>
+                            </table>
                         </div>
+
+                        <HR color="black" size="1px">
+                        
+                        <!-- Section Statistiques -->
+                        <div class="statistics_section">
+                            <p class="style_title">Statistiques d'équité :</p>
+                            
+                            <!-- Moyenne du temps de parole -->
+                            <div class="stat_item">
+                                <label class="stat_label">Moyenne temps de parole :</label>
+                                <span id="averageTime" class="stat_value">00:00:00.00</span>
+                            </div>
+                            
+                            <!-- Sélecteur de seuil de tolérance -->
+                            <div class="stat_item">
+                                <label class="stat_label">Seuil de tolérance :</label>
+                                <select id="toleranceSelect">
+                                    <option value="5">±5 %</option>
+                                    <option value="10">±10 %</option>
+                                    <option value="15">±15 %</option>
+                                    <option value="20">±20 %</option>
+                                    <option value="25">±25 %</option>
+                                    <option value="30">±30 %</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Indicateur global d'équité -->
+                            <div class="stat_item">
+                                <label class="stat_label">Équité :</label>
+                                <span id="equityIndicator" class="equity_indicator">Non déterminé</span>
+                            </div>
+                            
+                            <!-- Signal global de déséquilibre -->
+                            <div id="globalAlert" class="global_alert hidden">
+                                ⚠️ Déséquilibre détecté !
+                            </div>
+                        </div>
+
+                        <HR color="black" size="1px">
+                            
+                        <div>
+                            <button id="reset_all_timer">Réinitialiser les timers</button>
+                        </div>
+                        
                     </div>
                 </div>
         
@@ -63,6 +120,7 @@
                         <div class="countersWrapper_timer_display">
                             
                             <div id="counter1Container" class="counterContainer">
+                                <div id="speakingIndicator1" class="speaking_indicator">Moyenne</div>
                                 <div class="input_timer_content">
                                     <input type="text" id="nameInput1" placeholder="Entrez un nom">
                                 </div>
@@ -77,6 +135,7 @@
                             </div>
 
                             <div id="counter2Container" class="counterContainer">
+                                <div id="speakingIndicator2" class="speaking_indicator">Moyenne</div>
                                 <div class="input_timer_content">
                                     <input type="text" id="nameInput2" placeholder="Entrez un nom">
                                 </div>
@@ -91,6 +150,7 @@
                             </div>
 
                             <div id="counter3Container" class="counterContainer">
+                                <div id="speakingIndicator3" class="speaking_indicator">Moyenne</div>
                                 <div class="input_timer_content">
                                     <input type="text" id="nameInput3" placeholder="Entrez un nom">
                                 </div>
@@ -106,6 +166,7 @@
                         </div>
                         <div class="countersWrapper_timer_display">  
                             <div id="counter4Container" class="counterContainer">
+                                <div id="speakingIndicator4" class="speaking_indicator">Moyenne</div>
                                 <div class="input_timer_content">
                                     <input type="text" id="nameInput4" placeholder="Entrez un nom">
                                 </div>
@@ -119,6 +180,7 @@
                                 </div>
                             </div>
                             <div id="counter5Container" class="counterContainer">
+                                <div id="speakingIndicator5" class="speaking_indicator">Moyenne</div>
                                 <div class="input_timer_content">
                                     <input type="text" id="nameInput5" placeholder="Entrez un nom">
                                 </div>
@@ -132,6 +194,7 @@
                                 </div>
                             </div>
                             <div id="counter6Container" class="counterContainer">
+                                <div id="speakingIndicator6" class="speaking_indicator">Moyenne</div>
                                 <div class="input_timer_content">
                                     <input type="text" id="nameInput6" placeholder="Entrez un nom">
                                 </div>

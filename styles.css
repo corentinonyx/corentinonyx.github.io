@@ -4,6 +4,32 @@ html, body {
     margin: 0;
     padding: 0;
     overflow: hidden;
+    height: 100vh;
+}
+
+.speaking_indicator {
+    font-size: 12px;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 5px;
+    padding: 2px 6px;
+    border-radius: 12px;
+    color: white;
+    background-color: #6c757d;
+    transition: all 0.3s ease;
+}
+
+.speaking_indicator.too_much {
+    background-color: #dc3545;
+}
+
+.speaking_indicator.too_little {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.speaking_indicator.average {
+    background-color: #28a745;
 }
 
 
@@ -15,25 +41,32 @@ html, body {
 }
 
 header{
-    display: block;
+    display: flex;
     height: 7vh;
     width: 100%;
     margin: 0;
     border: 0;
     background-color: white;
     border-bottom: 2px solid black;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 10px;
+}
+
+header > div {
     display: flex;
     align-items: center;
-    justify-content: right;
+    gap: 10px;
 }
 
 #exclusiveToggle {
+    margin-right: 20px;
     border: none;
-    background: white;
-    padding: 0.75rem 1.2rem;
+    background: transparent;
+    padding: 0.5rem 0.8rem;
     display: inline-flex;
     align-items: center;
-    gap: 0.60rem;
+    gap: 0.40rem;
     font-weight: 600;
     color: #111;
     transition: transform 200ms ease, box-shadow 200ms ease, background 200ms ease;
@@ -46,16 +79,16 @@ header{
 
 #exclusiveToggle .toggleLabel {
     text-transform: uppercase;
-    letter-spacing: 0.1em;
-    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    font-size: 0.65rem;
     color: black;
 }
 
 #exclusiveToggle .toggleState {
-    font-size: 1rem;
+    font-size: 0.9rem;
     font-weight: 700;
     color: black;
-    min-width: 2.5rem;
+    min-width: 2rem;
     text-align: center;
     transition: color 200ms ease;
 }
@@ -99,15 +132,20 @@ header{
 }
 
 main {
-    height: 80%;
+    height: calc(100vh - 7vh - 8vh);
     width: 100%;
     border: 0;
+    overflow: hidden;
 }
 
 footer {
     display: flex;
-    height: 10%;
+    height: 8vh;
     border-top: 2px solid black;
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    background-color: white;
 }
 
 #footer_bar_credit {
@@ -177,20 +215,21 @@ footer {
     width: 20%;
     max-width: 30%;
     min-width: 10%;
-    height: 86vh;
+    height: calc(100vh - 7vh - 8vh);
     text-align: center;
     background-color: white;
-    padding: 0px;
+    padding: 5px; /* Réduit le padding */
     margin: 0px;
     border: 0px;
     border-right: 2px solid black;
+    overflow-y: auto; /* Ajout du scroll si nécessaire */
 }
 
 .style_timer{
     width: 80%;
     max-width: 90%;
     min-width: 60%;
-    height: 86vh;
+    height: calc(100vh - 7vh - 10vh);
     background-color: white;
     display: flex;
     justify-content: center;
@@ -198,6 +237,7 @@ footer {
     padding: 0px;
     margin: 0px;
     border: 0px;
+    overflow: hidden;
 }
 
 
@@ -292,9 +332,11 @@ input {
 
 
 .style_title{
-    size: 40px;
+    size: 30px;
     font-weight: bold;
-    padding: 10px;
+    padding: 5px; /* Réduit le padding */
+    margin: 5px 0; /* Réduit la marge */
+    font-size: 14px; /* Réduit la taille de police */
 }
 
 button {
@@ -344,27 +386,212 @@ td:last-child {
 
 
 #rankingTable {
-    width: 80%;
-    max-width: 80%;
-    height: 50%;
+    width: 90%; /* Augmente légèrement */
+    max-width: 90%;
     margin-left: auto;
     margin-right: auto;
+    font-size: 12px; /* Réduit la taille de police */
+    border-collapse: separate;
+    border-spacing: 0 2px;
+}
+
+/* Styles pour les indicateurs visuels */
+.visual_indicator {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px;
+}
+
+.progress_bar_simple {
+    width: 40px;
+    height: 6px;
+    background-color: #f0f0f0;
+    border-radius: 3px;
+    overflow: hidden;
+    border: 1px solid #ddd;
+}
+
+.progress_fill_simple {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.3s ease;
+    min-width: 1px;
+}
+
+/* Couleurs selon l'écart par rapport à la moyenne */
+.progress_high {
+    background: linear-gradient(90deg, #ff4444, #cc0000) !important;
+    box-shadow: 0 0 3px rgba(255, 68, 68, 0.5);
+}
+
+.progress_above {
+    background: linear-gradient(90deg, #ff9944, #ff6600) !important;
+    box-shadow: 0 0 3px rgba(255, 153, 68, 0.5);
+}
+
+.progress_normal {
+    background: linear-gradient(90deg, #44ff44, #00cc00) !important;
+    box-shadow: 0 0 3px rgba(68, 255, 68, 0.5);
+}
+
+.progress_below {
+    background: linear-gradient(90deg, #4499ff, #0066cc) !important;
+    box-shadow: 0 0 3px rgba(68, 153, 255, 0.5);
+}
+
+.progress_low {
+    background: linear-gradient(90deg, #9944ff, #6600cc) !important;
+    box-shadow: 0 0 3px rgba(153, 68, 255, 0.5);
+}
+
+.deviation_icon {
+    font-size: 12px;
+    display: block;
+    text-align: center;
+    cursor: help;
+    transition: transform 0.2s ease;
+}
+
+.deviation_icon:hover {
+    transform: scale(1.2);
+}
+
+/* Animation pour les barres extrêmes */
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
+}
+
+.progress_high .progress_fill_simple,
+.progress_low .progress_fill_simple {
+    animation: pulse 2s infinite;
 }
 
 #reset_all_timer {
-    padding: 2%;
-    margin: 20px;
+    padding: 1%; /* Réduit le padding */
+    margin: 8px 0; /* Réduit considérablement la marge */
+    font-size: 12px; /* Réduit la taille de police */
+}
+
+/* Styles pour la section statistiques */
+.statistics_section {
+    margin: 8px 0; /* Réduit la marge */
+    padding: 8px; /* Réduit le padding */
+}
+
+.stat_item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 4px 0; /* Réduit la marge */
+    padding: 3px 6px; /* Réduit le padding */
+}
+
+.stat_label {
+    font-weight: bold;
+    font-size: 12px; /* Réduit la taille de police */
+    color: #333;
+}
+
+.stat_value {
+    font-weight: bold;
+    font-size: 12px; /* Réduit la taille de police */
+    color: #0066cc;
+}
+
+.equity_indicator {
+    font-weight: bold;
+    font-size: 12px; /* Réduit la taille de police */
+    padding: 2px 6px; /* Réduit le padding */
+    border-radius: 3px;
+}
+
+.equity_indicator.respected {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.equity_indicator.not_respected {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.global_alert {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+    border-radius: 3px;
+    padding: 6px; /* Réduit le padding */
+    margin: 6px 0; /* Réduit la marge */
+    text-align: center;
+    font-weight: bold;
+    font-size: 12px; /* Réduit la taille de police */
+}
+
+.global_alert.hidden {
+    display: none;
+}
+
+/* Styles pour le tableau des écarts */
+.deviation_section {
+    margin: 8px 0; /* Réduit la marge */
+}
+
+#deviationTable {
+    width: 95%; /* Augmente légèrement pour gagner de l'espace */
+    max-width: 95%;
+    margin-left: auto;
+    margin-right: auto;
+    border-collapse: collapse;
+    font-size: 20px; /* Réduit la taille de police */
+}
+
+#deviationTable th {
+    display: table-cell;
+    padding: 4px; /* Réduit le padding */
+    text-align: center;
+    background-color: #f0f0f0;
+    border: 1px solid #ddd;
+    font-size: 14px; /* Réduit la taille de police */
+}
+
+#deviationTable td {
+    padding: 6px; /* Réduit le padding */
+    text-align: center;
+    border: 1px solid #ddd;
+    font-size: 13px; /* Réduit la taille de police */
+}
+
+.deviation_normal {
+    color: #155724;
+    background-color: #d4edda;
+}
+
+.deviation_warning {
+    color: #721c24;
+    background-color: #f8d7da;
+    font-weight: bold;
+}
+
+#toleranceSelect {
+    padding: 3px; /* Réduit le padding */
+    font-size: 10px; /* Réduit la taille de police */
+    border: 1px solid #ddd;
+    border-radius: 3px;
 }
 
 
 @media only screen and (min-width: 960px) and (max-width: 1599px) {
-    /* ruleset for 320px - 480px */
+    /* ruleset for écrans moyens */
     .counterContainer {
         height: 200px;
         width: 300px;
         margin: 20px;
     }
-
 
     .input_timer_content {
         height: 40px;
@@ -397,8 +624,30 @@ td:last-child {
         font-size: 25px;
     }
 
+    /* Ajustements pour les statistiques sur écrans moyens */
+    .statistics_section {
+        padding: 6px;
+    }
+
+    .stat_label, .stat_value {
+        font-size: 11px;
+    }
+
+    .equity_indicator {
+        font-size: 11px;
+    }
+
+    .global_alert {
+        font-size: 11px;
+        padding: 4px;
+    }
+
     td {
-        font-size: 10px;
+        font-size: 9px;
+    }
+
+    .style_title {
+        font-size: 13px;
     }
 }
 
