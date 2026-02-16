@@ -671,7 +671,7 @@ function generateEmailExport() {
         return deviation > tolerance;
     });
 
-    emailContent += `Équité respectée: ${hasImbalance ? '❌ Non' : '✅ Oui'}\n`;
+    emailContent += `Équité respectée: ${hasImbalance ? 'Non' : 'Oui'}\n`;
     
     if (hasImbalance) {
         const maxDeviation = Math.max(...activeTimers.map(timer => {
