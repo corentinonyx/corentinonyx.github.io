@@ -178,6 +178,7 @@ const counterContainers = Array.from({ length: TOTAL_TIMERS }, (_, index) =>
 const rankingBody = document.getElementById('rankingBody');
 const timerSelect = document.getElementById('timerSelect');
 const resetAllBtn = document.getElementById('reset_all_timer');
+const emailExportBtn = document.getElementById('email_export');
 const exclusiveToggleState = document.getElementById('exclusiveToggleState');
 
 // Éléments statistiques
@@ -298,6 +299,13 @@ function clamp(value, min, max) {
 if (resetAllBtn) {
     resetAllBtn.addEventListener('click', () => {
         timers.forEach(timer => timer.reset());
+    });
+}
+
+// Email Export
+if (emailExportBtn) {
+    emailExportBtn.addEventListener('click', () => {
+        generateEmailExport();
     });
 }
 
@@ -602,5 +610,88 @@ updateRanking();
 setTimeout(() => {
     updateSpeakingIndicators();
 }, 100);
+
+function generateEmailExport() {
+    const activeTimers = timers
+        .map((timer, index) => ({ timer, container: counterContainers[index] }))
+        .filter(({ container }) => container && container.style.display !== 'none')
+        .map(({ timer }) => ({
+            name: timer.name,
+            time: timer.getElapsedTime(),
+            formattedTime: timer.getFormattedTime(),
+        }));
+
+    if (activeTimers.length === 0) {
+        alert('Aucune donnée à exporter. Veuillez d\'abord démarrer les compteurs.');
+        return;
+    }
+
+    // Calcul des statistiques
+    const totalTime = activeTimers.reduce((sum, timer) => sum + timer.time, 0);
+    const averageTime = totalTime / activeTimers.length;
+    const tolerance = parseFloat(toleranceSelect?.value || 5);
+    
+    // Tri par ordre décroissant de temps de parole
+    const sortedTimers = [...activeTimers].sort((a, b) => b.time - a.time);
+    
+    // Génération du contenu de l'email
+    const currentDate = new Date().toLocaleString('fr-FR', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+
+    let emailContent = `Récapitulatif de la session de temps de parole\n`;
+    emailContent += `Date: ${currentDate}\n`;
+    emailContent += `Nombre de participants: ${activeTimers.length}\n`;
+    emailContent += `Seuil de tolérance: ±${tolerance}%\n\n`;
+
+    emailContent += `TEMPS TOTAL DE LA SESSION: ${formatTime(totalTime)}\n`;
+    emailContent += `TEMPS MOYEN PAR PARTICIPANT: ${formatTime(averageTime)}\n\n`;
+
+    emailContent += `DÉTAIL PAR PARTICIPANT (par ordre décroissant):\n`;
+    emailContent += `${'='.repeat(60)}\n\n`;
+
+    sortedTimers.forEach((timer, index) => {
+        const deviation = averageTime > 0 ? ((timer.time - averageTime) / averageTime) * 100 : 0;
+        
+        emailContent += `${index + 1}. ${timer.name}\n`;
+        emailContent += `   Temps: ${timer.formattedTime}\n`;
+        emailContent += `   Écart: ${deviation >= 0 ? '+' : ''}${deviation.toFixed(1)}%\n\n`;
+    });
+
+    emailContent += `STATISTIQUES D'ÉQUITÉ:\n`;
+    emailContent += `${'='.repeat(30)}\n`;
+    
+    const hasImbalance = activeTimers.some(timer => {
+        const deviation = averageTime > 0 ? Math.abs((timer.time - averageTime) / averageTime) * 100 : 0;
+        return deviation > tolerance;
+    });
+
+    emailContent += `Équité respectée: ${hasImbalance ? '❌ Non' : '✅ Oui'}\n`;
+    
+    if (hasImbalance) {
+        const maxDeviation = Math.max(...activeTimers.map(timer => {
+            const deviation = averageTime > 0 ? Math.abs((timer.time - averageTime) / averageTime) * 100 : 0;
+            return deviation;
+        }));
+        emailContent += `Écart maximum: ${maxDeviation.toFixed(1)}%\n`;
+    }
+
+    emailContent += `\n${'='.repeat(60)}\n`;
+    emailContent += `Généré par l'application Compteur TP FTV\n`;
+    emailContent += `© 2024 C. Millequand`;
+
+    // Création du mailto
+    const subject = encodeURIComponent(`Récapitulatif temps de parole - ${new Date().toLocaleDateString('fr-FR')}`);
+    const body = encodeURIComponent(emailContent);
+    const mailtoUrl = `mailto:?subject=${subject}&body=${body}`;
+    
+    // Ouverture du client mail
+    window.open(mailtoUrl, '_blank');
+}
 
 // ------------------------------------------------------------------------------------------------------------------------------------------------

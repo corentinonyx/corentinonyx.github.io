@@ -473,6 +473,29 @@ td:last-child {
     padding: 1%; /* Réduit le padding */
     margin: 8px 0; /* Réduit considérablement la marge */
     font-size: 12px; /* Réduit la taille de police */
+    background-color: #ff0000;
+    color: white;
+    border: 2px solid #b30000;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+#email_export {
+    padding: 1%;
+    margin: 8px 0;
+    font-size: 12px;
+    background-color: #007bff;
+    color: white;
+    border: 2px solid #0056b3;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+#email_export:hover {
+    background-color: #0056b3;
+    border-color: #004085;
 }
 
 /* Styles pour la section statistiques */
