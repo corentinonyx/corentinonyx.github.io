@@ -341,10 +341,45 @@ function updateRanking() {
         const row = document.createElement('tr');
         const idCell = document.createElement('td');
         const timeCell = document.createElement('td');
+        const gapCell = document.createElement('td');
         const visualCell = document.createElement('td');
 
         idCell.textContent = entry.name;
         timeCell.textContent = entry.formattedTime;
+
+        // Calculer les écarts
+        const gapToLeader = index > 0 ? times[0].time - entry.time : 0;
+        const gapToPredecessor = index > 0 ? times[index - 1].time - entry.time : 0;
+        
+        // Formater les écarts
+        const formatGap = (gap) => {
+            if (gap === 0) return '-';
+            const sign = gap > 0 ? '+' : '-';
+            const hours = Math.floor(gap / (1000 * 60 * 60));
+            const minutes = Math.floor((gap % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((gap % (1000 * 60)) / 1000);
+            
+            if (hours > 0) {
+                return `${sign}${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            } else if (minutes > 0) {
+                return `${sign}${minutes}:${seconds.toString().padStart(2, '0')}`;
+            } else {
+                return `${sign}${seconds}s`;
+            }
+        };
+
+        gapCell.innerHTML = `
+            <div class="gap-info">
+                <div class="gap-leader" title="Écart avec le leader">
+                    <span class="gap-label">▲</span>
+                    <span class="gap-value">${formatGap(gapToLeader)}</span>
+                </div>
+                <div class="gap-predecessor" title="Écart avec le prédécesseur">
+                    <span class="gap-label">▼</span>
+                    <span class="gap-value">${formatGap(gapToPredecessor)}</span>
+                </div>
+            </div>
+        `;
 
         // Créer l'indicateur visuel
         const visualContainer = document.createElement('div');
@@ -396,6 +431,7 @@ function updateRanking() {
 
         row.appendChild(idCell);
         row.appendChild(timeCell);
+        row.appendChild(gapCell);
         row.appendChild(visualCell);
 
         rankingBody.appendChild(row);

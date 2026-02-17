@@ -39,11 +39,12 @@
                 <div class="styte_rank">
                     <div>
                         <p class="style_title">Classement :</p>
-                        <table id="deviationTable">
+                        <table id="rankingTable">
                             <thead>
                                 <tr>
                                     <th>Compteur</th>
                                     <th>Temps</th>
+                                    <th>Écarts</th>
                                     <th>Visuel</th>
                                 </tr>
                             </thead>
@@ -107,10 +108,27 @@
                         </div>
 
                         <HR color="black" size="1px">
-                            
-                        <div>
+                           
+                        <!-- Légende des écarts -->
+                        <div class="gap-legend">
+                            <p class="legend-title">Légende des écarts :</p>
+                            <div class="legend-items">
+                                <div class="legend-item">
+                                    <span class="legend-symbol">▲</span>
+                                    <span class="legend-text">Retard sur le leader (-)</span>
+                                </div>
+                                <div class="legend-item">
+                                    <span class="legend-symbol">▼</span>
+                                    <span class="legend-text">Retard sur le prédécesseur (-)</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <HR color="black" size="1px">
+                        
+                        <div class="timer_controls">
                             <button id="reset_all_timer">Réinitialiser les timers</button>
-                            <button id="email_export">Exporter le récapitulatif</button>
+                            <button id="email_export">Exporter le récapitulatif par mail</button>
                         </div>
                         
                     </div>
