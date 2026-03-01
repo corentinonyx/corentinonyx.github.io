@@ -361,6 +361,31 @@ html, body {
     color: white;
 }
 
+/* Animations pour les notifications */
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-20px);
+    }
+}
+
+/* Styles pour le footer */
+
 /* Styles pour le Modal Pleine Page - Adapté au style du site */
 .sessions_modal {
     position: fixed;

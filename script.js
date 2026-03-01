@@ -302,7 +302,37 @@ function clamp(value, min, max) {
 // Reset ALL TIMER
 if (resetAllBtn) {
     resetAllBtn.addEventListener('click', () => {
-        timers.forEach(timer => timer.reset());
+        // Demander une confirmation avant de réinitialiser
+        const confirmation = confirm(
+            '⚠️ ATTENTION !\n\n' +
+            'Êtes-vous sûr de vouloir réinitialiser TOUS les timers ?\n\n' +
+            'Cette action :\n' +
+            '• Remettra tous les compteurs à 00:00:00.00\n' +
+            '• Effacera tous les noms personnalisés\n' +
+            '• Perdra toutes les données en cours\n\n' +
+            'Cliquez sur "OK" pour confirmer ou "Annuler" pour continuer.'
+        );
+        
+        // Seulement réinitialiser si l'utilisateur confirme
+        if (confirmation) {
+            // Ajouter un feedback visuel pendant la réinitialisation
+            resetAllBtn.textContent = 'Réinitialisation...';
+            resetAllBtn.disabled = true;
+            resetAllBtn.style.background = '#f59e0b';
+            
+            // Réinitialiser tous les timers
+            timers.forEach(timer => timer.reset());
+            
+            // Restaurer le bouton après un court délai
+            setTimeout(() => {
+                resetAllBtn.textContent = 'Réinitialiser les timers';
+                resetAllBtn.disabled = false;
+                resetAllBtn.style.background = '';
+                
+                // Afficher une notification toast de succès
+                toastNotification.success('Tous les timers ont été réinitialisés', 'Réinitialisation réussie');
+            }, 500);
+        }
     });
 }
 
@@ -393,7 +423,6 @@ function updateRanking() {
         const idCell = document.createElement('td');
         const timeCell = document.createElement('td');
         const gapCell = document.createElement('td');
-        const visualCell = document.createElement('td');
 
         idCell.textContent = entry.name;
         timeCell.textContent = entry.formattedTime;
@@ -432,59 +461,9 @@ function updateRanking() {
             </div>
         `;
 
-        // Créer l'indicateur visuel
-        const visualContainer = document.createElement('div');
-        visualContainer.className = 'visual_indicator';
-
-        // Barre de progression
-        const progressBar = document.createElement('div');
-        progressBar.className = 'progress_bar_simple';
-
-        const progressFill = document.createElement('div');
-        progressFill.className = 'progress_fill_simple';
-        const progressPercentage = maxTime > 0 ? (entry.time / maxTime) * 100 : 0;
-        progressFill.style.width = `${progressPercentage}%`;
-
-        // Déterminer la couleur selon l'écart par rapport à la moyenne
-        const deviation = averageTime > 0 ? ((entry.time - averageTime) / averageTime) * 100 : 0;
-        let colorClass = 'progress_normal';
-        let icon = '';
-
-        if (deviation > 10) {
-            colorClass = 'progress_high';
-            icon = '🔥'; // Beaucoup plus que la moyenne
-        } else if (deviation > 5) {
-            colorClass = 'progress_above';
-            icon = '📈'; // Plus que la moyenne
-        } else if (deviation < -10) {
-            colorClass = 'progress_low';
-            icon = '❄️'; // Beaucoup moins que la moyenne
-        } else if (deviation < -5) {
-            colorClass = 'progress_below';
-            icon = '📉'; // Moins que la moyenne
-        } else {
-            icon = '⚖️'; // Équilibré
-        }
-
-        progressFill.classList.add(colorClass);
-
-        // Ajouter l'icône d'écart
-        const deviationIcon = document.createElement('span');
-        deviationIcon.className = 'deviation_icon';
-        deviationIcon.textContent = icon;
-        deviationIcon.title = `${deviation > 0 ? '+' : ''}${deviation.toFixed(1)}%`;
-
-        // Assembler l'indicateur visuel
-        progressBar.appendChild(progressFill);
-        visualContainer.appendChild(progressBar);
-        visualContainer.appendChild(deviationIcon);
-        visualCell.appendChild(visualContainer);
-
         row.appendChild(idCell);
         row.appendChild(timeCell);
         row.appendChild(gapCell);
-        row.appendChild(visualCell);
-
         rankingBody.appendChild(row);
     });
 
@@ -954,8 +933,8 @@ function displaySessionsInModal(sessions) {
                 ${session.max_deviation ? `<p><strong>Écart max:</strong> ${session.max_deviation.toFixed(1)}%</p>` : ''}
             </div>
             <div class="session_actions">
-                <button onclick="viewSessionDetailsInModal('${session.id}')" class="view_button">👁️ Voir détails</button>
-                <button onclick="deleteSession('${session.id}')" class="delete_button">🗑️ Supprimer</button>
+                <button onclick="viewSessionDetailsInModal('${session.id}')" class="view_button">Voir détails</button>
+                <button onclick="deleteSession('${session.id}')" class="delete_button">Supprimer</button>
             </div>
         `;
         
