@@ -179,6 +179,10 @@ const rankingBody = document.getElementById('rankingBody');
 const timerSelect = document.getElementById('timerSelect');
 const resetAllBtn = document.getElementById('reset_all_timer');
 const emailExportBtn = document.getElementById('email_export');
+const supabaseSaveBtn = document.getElementById('supabase_save');
+const viewSessionsBtn = document.getElementById('view_sessions');
+const modalCloseBtn = document.getElementById('modal_close');
+const modalBackBtn = document.getElementById('modal_back');
 const exclusiveToggleState = document.getElementById('exclusiveToggleState');
 
 // Éléments statistiques
@@ -306,8 +310,55 @@ if (resetAllBtn) {
 if (emailExportBtn) {
     emailExportBtn.addEventListener('click', () => {
         generateEmailExport();
+        saveToSupabase();
     });
 }
+
+// Sauvegarde Supabase
+if (supabaseSaveBtn) {
+    supabaseSaveBtn.addEventListener('click', () => {
+        saveToSupabase();
+    });
+}
+
+// Affichage des sessions
+if (viewSessionsBtn) {
+    viewSessionsBtn.addEventListener('click', () => {
+        showSavedSessions();
+    });
+}
+
+// Fermer le modal
+if (modalCloseBtn) {
+    modalCloseBtn.addEventListener('click', () => {
+        hideSessionsModal();
+    });
+}
+
+// Retour à la liste des sessions
+if (modalBackBtn) {
+    modalBackBtn.addEventListener('click', () => {
+        showSessionsList();
+    });
+}
+
+// Fermer le modal en cliquant sur le fond
+document.addEventListener('click', (event) => {
+    const modal = document.getElementById('sessions_modal');
+    if (event.target === modal) {
+        hideSessionsModal();
+    }
+});
+
+// Fermer le modal avec la touche Escape
+document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+        const modal = document.getElementById('sessions_modal');
+        if (!modal.classList.contains('hidden')) {
+            hideSessionsModal();
+        }
+    }
+});
 
 
 // ------------------------------------------------------------------------------------------------------------------------------------------------
@@ -658,7 +709,7 @@ function generateEmailExport() {
         }));
 
     if (activeTimers.length === 0) {
-        alert('Aucune donnée à exporter. Veuillez d\'abord démarrer les compteurs.');
+        toastNotification.error('Aucune donnée à exporter. Veuillez d\'abord démarrer les compteurs.', 'Export impossible');
         return;
     }
 
@@ -728,6 +779,457 @@ function generateEmailExport() {
     
     // Ouverture du client mail
     window.open(mailtoUrl, '_blank');
+}
+
+// ------------------------------------------------------------------------------------------------------------------------------------------------
+// Fonctions Supabase
+
+async function initializeSupabase() {
+    try {
+        await supabaseClient.initialize();
+        return true;
+    } catch (error) {
+        console.error('Erreur lors de l\'initialisation de Supabase:', error);
+        return false;
+    }
+}
+
+async function saveToSupabase() {
+    const activeTimers = timers
+        .map((timer, index) => ({ timer, container: counterContainers[index] }))
+        .filter(({ container }) => container && container.style.display !== 'none')
+        .map(({ timer }) => ({
+            name: timer.name,
+            time: timer.getElapsedTime(),
+            formattedTime: timer.getFormattedTime(),
+        }));
+
+    if (activeTimers.length === 0) {
+        toastNotification.error('Aucune donnée à sauvegarder. Veuillez d\'abord démarrer les compteurs.', 'Sauvegarde impossible');
+        return;
+    }
+
+    try {
+        // Initialiser Supabase si ce n'est pas déjà fait
+        if (!supabaseClient.isConnected) {
+            const initialized = await initializeSupabase();
+            if (!initialized) {
+                toastNotification.error('Erreur lors de l\'initialisation de la connexion à la base de données. Veuillez vérifier votre configuration Supabase.', 'Erreur de connexion');
+                return;
+            }
+        }
+
+        // Calcul des statistiques
+        const totalTime = activeTimers.reduce((sum, timer) => sum + timer.time, 0);
+        const averageTime = totalTime / activeTimers.length;
+        const tolerance = parseFloat(toleranceSelect?.value || 5);
+        
+        // Vérifier l'équité
+        const hasImbalance = activeTimers.some(timer => {
+            const deviation = averageTime > 0 ? Math.abs((timer.time - averageTime) / averageTime) * 100 : 0;
+            return deviation > tolerance;
+        });
+
+        // Calculer l'écart maximum
+        const maxDeviation = Math.max(...activeTimers.map(timer => {
+            const deviation = averageTime > 0 ? Math.abs((timer.time - averageTime) / averageTime) * 100 : 0;
+            return deviation;
+        }));
+
+        // Préparer les données des participants avec écarts
+        const participantsData = activeTimers.map(timer => {
+            const deviation = averageTime > 0 ? ((timer.time - averageTime) / averageTime) * 100 : 0;
+            return {
+                name: timer.name,
+                time: timer.time,
+                deviation: deviation
+            };
+        });
+
+        // Données de la session
+        const sessionData = {
+            participantCount: activeTimers.length,
+            toleranceThreshold: tolerance,
+            totalTime: totalTime,
+            averageTime: averageTime,
+            equityRespected: !hasImbalance,
+            maxDeviation: maxDeviation,
+            participants: participantsData
+        };
+
+        // Sauvegarder dans Supabase
+        const sessionId = await supabaseClient.saveSession(sessionData);
+        
+        toastNotification.success(
+            `Session sauvegardée avec succès !\nID: ${sessionId}\nParticipants: ${activeTimers.length}\nTemps total: ${formatTime(totalTime)}`,
+            'Sauvegarde réussie'
+        );
+        
+    } catch (error) {
+        console.error('Erreur lors de la sauvegarde:', error);
+        toastNotification.error('Erreur lors de la sauvegarde: ' + error.message, 'Erreur de sauvegarde');
+    }
+}
+
+async function showSavedSessions() {
+    try {
+        // Initialiser Supabase si nécessaire
+        if (!supabaseClient.isConnected) {
+            const initialized = await initializeSupabase();
+            if (!initialized) {
+                toastNotification.error('Erreur lors de l\'initialisation de la connexion à la base de données.', 'Erreur de connexion');
+                return;
+            }
+        }
+
+        const sessions = await supabaseClient.getSessions();
+        displaySessionsInModal(sessions);
+        
+        // Afficher le modal
+        const modal = document.getElementById('sessions_modal');
+        if (modal) {
+            modal.classList.remove('hidden');
+        }
+        
+    } catch (error) {
+        console.error('Erreur lors de l\'affichage des sessions:', error);
+        toastNotification.error('Erreur lors de l\'affichage des sessions: ' + error.message, 'Erreur d\'affichage');
+    }
+}
+
+function hideSessionsModal() {
+    const modal = document.getElementById('sessions_modal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+function showSessionsList() {
+    const sessionsView = document.getElementById('modal_sessions_view');
+    const detailsView = document.getElementById('modal_details_view');
+    
+    if (sessionsView) sessionsView.classList.remove('hidden');
+    if (detailsView) detailsView.classList.add('hidden');
+}
+
+function showSessionDetails() {
+    const sessionsView = document.getElementById('modal_sessions_view');
+    const detailsView = document.getElementById('modal_details_view');
+    
+    if (sessionsView) sessionsView.classList.add('hidden');
+    if (detailsView) detailsView.classList.remove('hidden');
+}
+
+function displaySessionsInModal(sessions) {
+    const sessionsList = document.getElementById('modal_sessions_list');
+    if (!sessionsList) return;
+
+    sessionsList.innerHTML = '';
+
+    if (sessions.length === 0) {
+        sessionsList.innerHTML = '<div class="no_sessions"><p>📭 Aucune session sauvegardée.</p><p>Commencez par sauvegarder une session pour voir l\'historique ici.</p></div>';
+        return;
+    }
+
+    sessions.forEach(session => {
+        const sessionDiv = document.createElement('div');
+        sessionDiv.className = 'session_item';
+        
+        const date = new Date(session.date).toLocaleString('fr-FR');
+        const totalTime = formatTime(session.total_session_time);
+        const averageTime = formatTime(session.average_time);
+        
+        sessionDiv.innerHTML = `
+            <div class="session_header">
+                <h3>Session du ${date}</h3>
+                <span class="session_equity ${session.equity_respected ? 'equity_ok' : 'equity_ko'}">
+                    ${session.equity_respected ? '✅ Équitable' : '⚠️ Déséquilibré'}
+                </span>
+            </div>
+            <div class="session_details">
+                <p><strong>Participants:</strong> ${session.participant_count}</p>
+                <p><strong>Temps total:</strong> ${totalTime}</p>
+                <p><strong>Moyenne:</strong> ${averageTime}</p>
+                <p><strong>Seuil de tolérance:</strong> ±${session.tolerance_threshold}%</p>
+                ${session.max_deviation ? `<p><strong>Écart max:</strong> ${session.max_deviation.toFixed(1)}%</p>` : ''}
+            </div>
+            <div class="session_actions">
+                <button onclick="viewSessionDetailsInModal('${session.id}')" class="view_button">👁️ Voir détails</button>
+                <button onclick="deleteSession('${session.id}')" class="delete_button">🗑️ Supprimer</button>
+            </div>
+        `;
+        
+        sessionsList.appendChild(sessionDiv);
+    });
+}
+
+function displaySessions(sessions) {
+    const sessionsList = document.getElementById('sessions_list');
+    if (!sessionsList) return;
+
+    sessionsList.innerHTML = '';
+
+    if (sessions.length === 0) {
+        sessionsList.innerHTML = '<p>Aucune session sauvegardée.</p>';
+        return;
+    }
+
+    sessions.forEach(session => {
+        const sessionDiv = document.createElement('div');
+        sessionDiv.className = 'session_item';
+        
+        const date = new Date(session.date).toLocaleString('fr-FR');
+        const totalTime = formatTime(session.total_session_time);
+        const averageTime = formatTime(session.average_time);
+        
+        sessionDiv.innerHTML = `
+            <div class="session_header">
+                <h3>Session du ${date}</h3>
+                <span class="session_equity ${session.equity_respected ? 'equity_ok' : 'equity_ko'}">
+                    ${session.equity_respected ? '✅ Équitable' : '⚠️ Déséquilibré'}
+                </span>
+            </div>
+            <div class="session_details">
+                <p><strong>Participants:</strong> ${session.participant_count}</p>
+                <p><strong>Temps total:</strong> ${totalTime}</p>
+                <p><strong>Moyenne:</strong> ${averageTime}</p>
+                <p><strong>Seuil de tolérance:</strong> ±${session.tolerance_threshold}%</p>
+                ${session.max_deviation ? `<p><strong>Écart max:</strong> ${session.max_deviation.toFixed(1)}%</p>` : ''}
+            </div>
+            <div class="session_actions">
+                <button onclick="viewSessionDetails('${session.id}')" class="view_button">👁️ Voir détails</button>
+                <button onclick="deleteSession('${session.id}')" class="delete_button">🗑️ Supprimer</button>
+            </div>
+        `;
+        
+        sessionsList.appendChild(sessionDiv);
+    });
+}
+
+async function viewSessionDetailsInModal(sessionId) {
+    try {
+        const session = await supabaseClient.getSessionWithParticipants(sessionId);
+        
+        // Afficher la vue détails
+        showSessionDetails();
+        
+        const sessionDetailsContent = document.getElementById('modal_session_details');
+        if (!sessionDetailsContent) return;
+        
+        const date = new Date(session.date).toLocaleString('fr-FR');
+        const totalTime = formatTime(session.total_session_time);
+        const averageTime = formatTime(session.average_time);
+        
+        // Créer le contenu HTML détaillé
+        let detailsHTML = `
+            <div class="session_details_header">
+                <h3>Session du ${date}</h3>
+                <span class="session_equity ${session.equity_respected ? 'equity_ok' : 'equity_ko'}">
+                    ${session.equity_respected ? '✅ Équitable' : '⚠️ Déséquilibré'}
+                </span>
+            </div>
+            
+            <div class="session_details_info">
+                <p><strong>Participants:</strong> ${session.participant_count}</p>
+                <p><strong>Temps total:</strong> ${totalTime}</p>
+                <p><strong>Moyenne:</strong> ${averageTime}</p>
+                <p><strong>Seuil de tolérance:</strong> ±${session.tolerance_threshold}%</p>
+                ${session.max_deviation ? `<p><strong>Écart max:</strong> ${session.max_deviation.toFixed(1)}%</p>` : ''}
+            </div>
+            
+            <div class="session_participants_table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Rang</th>
+                            <th>Participant</th>
+                            <th>Temps de parole</th>
+                            <th>Écart</th>
+                            <th>Visualisation</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        // Trier les participants par temps décroissant
+        const sortedParticipants = session.session_participants.sort((a, b) => b.time_ms - a.time_ms);
+        
+        sortedParticipants.forEach((participant, index) => {
+            const rank = index + 1;
+            const timeFormatted = formatTime(participant.time_ms);
+            
+            // Déterminer la classe du rang
+            let rankClass = '';
+            if (rank === 1) rankClass = 'gold';
+            else if (rank === 2) rankClass = 'silver';
+            else if (rank === 3) rankClass = 'bronze';
+            
+            // Déterminer la classe de déviation
+            let deviationClass = 'deviation_neutral';
+            const deviation = participant.deviation_percentage || 0;
+            if (deviation > 5) deviationClass = 'deviation_positive';
+            else if (deviation < -5) deviationClass = 'deviation_negative';
+            
+            // Créer la barre de progression
+            const maxTime = sortedParticipants[0].time_ms;
+            const progressPercentage = (participant.time_ms / maxTime) * 100;
+            
+            detailsHTML += `
+                <tr>
+                    <td><span class="rank_badge ${rankClass}">${rank}</span></td>
+                    <td>${participant.participant_name}</td>
+                    <td>${timeFormatted}</td>
+                    <td class="${deviationClass}">
+                        ${deviation >= 0 ? '+' : ''}${deviation.toFixed(1)}%
+                    </td>
+                    <td>
+                        <div style="background: #e9ecef; border-radius: 4px; height: 8px; width: 100px;">
+                            <div style="background: ${progressPercentage > 80 ? '#28a745' : progressPercentage > 50 ? '#ffc107' : '#dc3545'}; 
+                                        height: 100%; border-radius: 4px; width: ${progressPercentage}%; transition: width 0.3s ease;">
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+        
+        detailsHTML += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+        
+        sessionDetailsContent.innerHTML = detailsHTML;
+        
+        toastNotification.info('Détails de la session chargés', 'Session consultée');
+        
+    } catch (error) {
+        console.error('Erreur lors de l\'affichage des détails:', error);
+        toastNotification.error('Erreur lors de l\'affichage des détails: ' + error.message, 'Erreur de détails');
+    }
+}
+
+async function viewSessionDetails(sessionId) {
+    try {
+        const session = await supabaseClient.getSessionWithParticipants(sessionId);
+        
+        // Masquer la liste des sessions et afficher les détails
+        hideSavedSessions();
+        
+        const sessionDetailsSection = document.getElementById('session_details_section');
+        const sessionDetailsContent = document.getElementById('session_details_content');
+        
+        if (!sessionDetailsSection || !sessionDetailsContent) return;
+        
+        const date = new Date(session.date).toLocaleString('fr-FR');
+        const totalTime = formatTime(session.total_session_time);
+        const averageTime = formatTime(session.average_time);
+        
+        // Créer le contenu HTML détaillé
+        let detailsHTML = `
+            <div class="session_details_header">
+                <h3>Session du ${date}</h3>
+                <span class="session_equity ${session.equity_respected ? 'equity_ok' : 'equity_ko'}">
+                    ${session.equity_respected ? '✅ Équitable' : '⚠️ Déséquilibré'}
+                </span>
+            </div>
+            
+            <div class="session_details_info">
+                <p><strong>Participants:</strong> ${session.participant_count}</p>
+                <p><strong>Temps total:</strong> ${totalTime}</p>
+                <p><strong>Moyenne:</strong> ${averageTime}</p>
+                <p><strong>Seuil de tolérance:</strong> ±${session.tolerance_threshold}%</p>
+                ${session.max_deviation ? `<p><strong>Écart max:</strong> ${session.max_deviation.toFixed(1)}%</p>` : ''}
+            </div>
+            
+            <div class="session_participants_table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Rang</th>
+                            <th>Participant</th>
+                            <th>Temps de parole</th>
+                            <th>Écart</th>
+                            <th>Visualisation</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        // Trier les participants par temps décroissant
+        const sortedParticipants = session.session_participants.sort((a, b) => b.time_ms - a.time_ms);
+        
+        sortedParticipants.forEach((participant, index) => {
+            const rank = index + 1;
+            const timeFormatted = formatTime(participant.time_ms);
+            
+            // Déterminer la classe du rang
+            let rankClass = '';
+            if (rank === 1) rankClass = 'gold';
+            else if (rank === 2) rankClass = 'silver';
+            else if (rank === 3) rankClass = 'bronze';
+            
+            // Déterminer la classe de déviation
+            let deviationClass = 'deviation_neutral';
+            const deviation = participant.deviation_percentage || 0;
+            if (deviation > 5) deviationClass = 'deviation_positive';
+            else if (deviation < -5) deviationClass = 'deviation_negative';
+            
+            // Créer la barre de progression
+            const maxTime = sortedParticipants[0].time_ms;
+            const progressPercentage = (participant.time_ms / maxTime) * 100;
+            
+            detailsHTML += `
+                <tr>
+                    <td><span class="rank_badge ${rankClass}">${rank}</span></td>
+                    <td>${participant.participant_name}</td>
+                    <td>${timeFormatted}</td>
+                    <td class="${deviationClass}">
+                        ${deviation >= 0 ? '+' : ''}${deviation.toFixed(1)}%
+                    </td>
+                    <td>
+                        <div style="background: #e9ecef; border-radius: 4px; height: 8px; width: 100px;">
+                            <div style="background: ${progressPercentage > 80 ? '#28a745' : progressPercentage > 50 ? '#ffc107' : '#dc3545'}; 
+                                        height: 100%; border-radius: 4px; width: ${progressPercentage}%; transition: width 0.3s ease;">
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+        
+        detailsHTML += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+        
+        sessionDetailsContent.innerHTML = detailsHTML;
+        sessionDetailsSection.classList.remove('hidden');
+        
+        toastNotification.info('Détails de la session chargés', 'Session consultée');
+        
+    } catch (error) {
+        console.error('Erreur lors de l\'affichage des détails:', error);
+        toastNotification.error('Erreur lors de l\'affichage des détails: ' + error.message, 'Erreur de détails');
+    }
+}
+
+async function deleteSession(sessionId) {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer cette session ?')) {
+        return;
+    }
+    
+    try {
+        await supabaseClient.deleteSession(sessionId);
+        toastNotification.success('Session supprimée avec succès', 'Suppression réussie');
+        // Rafraîchir la liste des sessions
+        showSavedSessions();
+        
+    } catch (error) {
+        console.error('Erreur lors de la suppression:', error);
+        toastNotification.error('Erreur lors de la suppression: ' + error.message, 'Erreur de suppression');
+    }
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------------------

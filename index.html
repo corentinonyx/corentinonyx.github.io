@@ -237,6 +237,7 @@
                 <img id="logo" src="images/copyright.jpg" />
                 <img id="logo" src="images/logo.png" />
                 <p id="logo_label">&copy; 2024 C. Millequand</p>
+                <button id="view_sessions">Voir les sessions</button>
             </div>
             <div id="footer_bar_tools">
                 <select id="resolutionSelect">
@@ -251,6 +252,42 @@
         </footer>
         
     </div>
+    
+    <!-- Modal Pleine Page pour les Sessions -->
+    <div id="sessions_modal" class="sessions_modal hidden">
+        <div class="modal_container">
+            <div class="modal_header">
+                <h2>📊 Sessions Sauvegardées</h2>
+                <button id="modal_close" class="modal_close_button">✖</button>
+            </div>
+            
+            <!-- Vue Liste des Sessions -->
+            <div id="modal_sessions_view" class="modal_view">
+                <div class="modal_content">
+                    <div id="modal_sessions_list" class="sessions_list">
+                        <!-- Les sessions seront ajoutées par JavaScript -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Vue Détails Session -->
+            <div id="modal_details_view" class="modal_view hidden">
+                <div class="modal_content">
+                    <div class="details_header">
+                        <button id="modal_back" class="back_button">← Retour à la liste</button>
+                    </div>
+                    <div id="modal_session_details" class="session_details_content">
+                        <!-- Les détails seront ajoutés par JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <link rel="stylesheet" href="toast-notifications.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-client.js"></script>
+    <script src="toast-notifications.js"></script>
     <script src="script.js"></script>
     <script src="resolution.js"></script>
 </body>
